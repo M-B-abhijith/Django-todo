@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Dashboard</title>
+    <style>
+        /* CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* Add this to enable positioning of the logout button */
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Styles for task actions */
+        .task-actions {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .task-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .task-actions button.view {
+            background-color: #007bff;
+            /* Blue background for view buttons */
+            color: #fff;
+        }
+
+        .task-actions button.view:hover {
+            background-color: #0056b3;
+            /* Darker blue on hover */
+        }
+
+        /* Styles for add task form */
+        .add-task-form {
+            margin-bottom: 20px;
+        }
+
+        .add-task-form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .add-task-form input[type="text"],
+        .add-task-form input[type="date"] {
+            width: calc(100% - 12px);
+            padding: 6px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .add-task-form button[type="submit"] {
+            background-color: #28a745;
+            /* Green background for submit button */
+            color: #fff;
+        }
+
+        .add-task-form button[type="submit"]:hover {
+            background-color: #218838;
+            /* Darker green on hover */
+        }
+
+        /* Styles for todo lists */
+        .todo-list {
+            margin-bottom: 20px;
+        }
+
+        .todo-list h2 {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .todo-item {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        /* Styles for task actions within todo item */
+        .todo-item .task-actions {
+            display: flex;
+            justify-content: space-between;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+
+        .todo-item .task-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .todo-item .task-actions button.edit {
+            background-color: #007bff;
+            color: #fff;
+            margin-right: 5px;
+        }
+
+        .todo-item .task-actions button.delete {
+            background-color: #dc3545;
+            color: #fff;
+            margin-right: 5px;
+        }
+
+        .todo-item .task-actions button.complete {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .task-actions button {
+            background-color: #28a745;
+            /* Green background for active button */
+            color: #fff;
+            /* White text color */
+        }
+
+        /* Styles for logout button */
+        .logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #dc3545; /* Red background color */
+            color: #fff; /* White text color */
+        }
+
+        .logout-btn:hover {
+            background-color: #c82333; /* Darker red on hover */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Todo Dashboard</h1>
+
+        <!-- <p>Welcome, {{ request.CustomUser.username }}!</p> -->
+
+        <!-- Logout Button -->
+        <button class="logout-btn" onclick="logout()">Logout</button>
+
+        <!-- Add Task Form -->
+        <div class="add-task-form">
+            <h2>Add New Task</h2>
+            <form method="post" id="add-task-form">
+                {% csrf_token %}
+                <div>
+                    <label for="task-name">Task Name:</label>
+                    <input type="text" id="task-name" name="task_name" required>
+                </div>
+                <div>
+                    <label for="due-date">Due Date:</label>
+                    <input type="date" id="due-date" name="due_date" required>
+                </div>
+                <button type="submit">Add Task</button>
+            </form>
+        </div>
+
+        <!-- Task Actions -->
+        <div class="task-actions">
+    <button class="view {% if status == 'completed' %}active{% endif %}"
+        onclick="showTasks('completed', '{{ user_id }}', this, 'Completed Task List')">View Completed Tasks</button>
+    <button class="view {% if status == 'pending' %}active{% endif %}"
+        onclick="showTasks('pending', '{{ user_id }}', this, 'Pending Task List')">View Pending Tasks</button>
+    <button class="view {% if status == 'expired' %}active{% endif %}"
+        onclick="showTasks('expired', '{{ user_id }}', this, 'Expired Task List')">View Expired Tasks</button>
+</div>
+
+
+
+
+
+
+        <!-- JavaScript to handle task view buttons -->
+        <script>
+            function showTasks(status, userId, button, headingText) {
+                // Remove 'active' class from all buttons
+                var buttons = document.querySelectorAll('.task-actions button');
+                buttons.forEach(function (btn) {
+                    btn.classList.remove('active');
+                });
+        
+                // Add 'active' class to the clicked button
+                button.classList.add('active');
+        
+                // Update the heading text
+                document.querySelector('.todo-list h2').innerText = headingText;
+        
+                // Redirect to the appropriate URL based on the status
+                window.location.href = '/todo_dashboard/' + userId + '/?status=' + status;
+            }
+        
+            function logout() {
+                // Redirect to the login page
+                window.location.href = '/login/';
+            }
+        </script>
+        
+
+
+
+
+
+
+        <!-- Task List -->
+        <div class="todo-list">
+            <h2>Task List</h2>
+            <div class="todo-items">
+                {% for task in tasks %}
+                <div class="todo-item">
+                    <p>{{ task.task_name }}</p>
+                    <p>Due Date: {{ task.due_date }}</p>
+                    <div class="task-actions">
+                        <button class="edit" onclick="editTask('{{ task.id }}')">Edit</button>
+                        <button class="delete" onclick="deleteTask('{{ task.id }}', '{{ user_id }}')">Delete</button>
+                        {% if task.status == 'Pending' %}
+                        <button class="complete" onclick="markCompleted('{{ task.id }}')">Mark as Completed</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for task actions -->
+    <script>
+        function editTask(taskId) {
+            window.location.href = '/edit_task/' + taskId + '/';
+        }
+
+        function deleteTask(taskId, userId) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                window.location.href = '/delete_task/' + taskId + '/';
+            }
+        }
+
+
+        function markCompleted(taskId) {
+            if (confirm('Are you sure you want to mark this task as completed?')) {
+                window.location.href = '/mark_completed/' + taskId + '/';
+            }
+        }
+    </script>
+</body>
+
+</html>
+
+
+
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
